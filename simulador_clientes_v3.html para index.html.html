@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Seguros — Daniel Quintas</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
+body{background:#f5f5f3;min-height:100vh;padding:2rem 1rem}
+.sim{max-width:620px;margin:0 auto}
+.header{text-align:center;margin-bottom:2rem;padding:1.5rem;background:#0A1628;border-radius:14px;color:white}
+.header h1{color:white;font-size:18px;font-weight:600}
+.header p{font-size:12px;color:#aac4e0;margin-top:4px}
+.progress-wrap{margin-bottom:1.5rem}
+.progress{display:flex;gap:5px;margin-bottom:6px}
+.ps{flex:1;height:4px;border-radius:2px;background:#e0e0e0;transition:background .3s}
+.ps.done{background:#1D9E75}.ps.active{background:#378ADD}
+.prog-label{font-size:12px;color:#999;text-align:right}
+.qcard{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.qlabel{font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.qtitle{font-size:16px;font-weight:600;color:#0A1628;margin-bottom:4px}
+.qsub{font-size:13px;color:#888;margin-bottom:1.25rem;line-height:1.5}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border:1px solid #e8e8e8;border-radius:8px;cursor:pointer;background:#fff;transition:all .15s;font-size:14px;color:#333;text-align:left}
+.opt:hover{border-color:#378ADD;background:#f0f7ff}
+.opt.selected{border-color:#378ADD;background:#E6F1FB;color:#185FA5;font-weight:500}
+.opt-icon{font-size:16px;margin-top:1px;flex-shrink:0}
+.opt-text{flex:1}
+.opt-sub{font-size:12px;color:#999;margin-top:2px;font-weight:400}
+.opt.selected .opt-sub{color:#378ADD}
+.nav{display:flex;gap:8px;margin-top:1rem}
+.bbk{padding:10px 20px;font-size:14px;cursor:pointer;border-radius:8px;border:1px solid #e0e0e0;background:#fff;color:#555;flex-shrink:0}
+.bnx{padding:10px 24px;font-size:14px;cursor:pointer;border-radius:8px;background:#378ADD;color:white;border:none;font-weight:600;flex:1}
+.bnx:disabled{opacity:.4;cursor:not-allowed}
+.result-header{font-size:18px;font-weight:700;color:#0A1628;margin-bottom:6px}
+.pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:1.25rem}
+.pill{font-size:11px;padding:3px 9px;border-radius:20px;background:#f0f0f0;color:#666;border:1px solid #e8e8e8}
+.alert-box{border-radius:10px;padding:12px 14px;margin-bottom:1rem;display:flex;gap:10px;align-items:flex-start}
+.alert-box.warn{background:#FAEEDA;border:1px solid #FAC775}
+.alert-box.info{background:#E6F1FB;border:1px solid #B5D4F4}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.alert-text{font-size:13px;line-height:1.55}
+.alert-box.warn .alert-text{color:#633806}
+.alert-box.info .alert-text{color:#0C447C}
+.total-box{background:#E6F1FB;border:1px solid #B5D4F4;border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.total-label{font-size:13px;color:#185FA5;font-weight:600}
+.total-pct{font-size:12px;color:#378ADD;margin-top:2px}
+.total-val{font-size:26px;font-weight:700;color:#185FA5;flex-shrink:0}
+.section-title{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin:1.25rem 0 .75rem}
+.rcard{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:1.25rem;margin-bottom:10px}
+.rcard.primary{border:2px solid #378ADD}
+.badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:6px;margin-bottom:10px;font-weight:500}
+.bp{background:#E6F1FB;color:#185FA5}.bs{background:#f5f5f3;color:#888}.bw{background:#FAEEDA;color:#633806}
+.rtitle{font-size:15px;font-weight:600;color:#0A1628;margin-bottom:5px}
+.rdesc{font-size:13px;color:#666;line-height:1.6;margin-bottom:10px}
+.amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+.acard{background:#f8f8f6;border-radius:8px;padding:9px 10px;text-align:center}
+.alabel{font-size:11px;color:#999;margin-bottom:3px}
+.avalue{font-size:15px;font-weight:600;color:#0A1628}
+.avalue.green{color:#0F6E56}
+.rwhy{font-size:12px;color:#185FA5;background:#E6F1FB;padding:7px 11px;border-radius:6px;margin-top:8px}
+.payments-note{font-size:11px;color:#888;margin-top:6px;padding:5px 8px;background:#f8f8f6;border-radius:5px}
+.cta-box{background:#E1F5EE;border:1px solid #9FE1CB;border-radius:12px;padding:1.25rem;margin-top:1.5rem;text-align:center}
+.cta-title{font-size:15px;font-weight:600;color:#085041;margin-bottom:5px}
+.cta-text{font-size:13px;color:#0F6E56;margin-bottom:12px;line-height:1.5}
+.cta-btn{display:inline-block;background:#1D9E75;color:white;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;border:none}
+.disclaimer{font-size:12px;color:#999;margin-top:10px;padding:10px;background:#f5f5f3;border-radius:8px;line-height:1.5}
+.reset-btn{padding:10px 20px;font-size:13px;cursor:pointer;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0;background:#fff;color:#777;width:100%}
+</style>
+</head>
+<body>
+<div class="sim">
+  <div class="header">
+    <h1>Simulador de Seguros de Vida</h1>
+    <p>Descubra a solução ideal para si — gratuito e sem compromisso</p>
+  </div>
+  <div id="app"></div>
+</div>
+<script>
+const Q=[
+  {id:'age',title:'Qual é a sua idade?',opts:[
+    {v:'young',t:'18 a 30 anos'},{v:'mid',t:'31 a 45 anos'},{v:'senior',t:'46 a 55 anos'},{v:'old',t:'56 anos ou mais'}
+  ]},
+  {id:'family',title:'Qual é a sua situação familiar?',opts:[
+    {v:'single',t:'Solteiro/a sem filhos'},{v:'couple',t:'Casal sem filhos'},
+    {v:'kids',t:'Com filhos dependentes'},{v:'business',t:'Empresário ou trabalhador independente'}
+  ]},
+  {id:'credit',title:'Tem crédito habitação ou empréstimos?',opts:[
+    {v:'mortgage',t:'Sim, crédito habitação'},{v:'loan',t:'Sim, outros empréstimos'},{v:'none',t:'Não tenho créditos'}
+  ]},
+  {id:'mortgage_amount',title:'Qual é o valor aproximado do crédito habitação?',condition:a=>a.credit==='mortgage',opts:[
+    {v:'low',t:'Até 100.000 €'},{v:'mid',t:'100.000 € a 200.000 €'},
+    {v:'high',t:'200.000 € a 350.000 €'},{v:'vhigh',t:'Mais de 350.000 €'}
+  ]},
+  {id:'mortgage_years',title:'Qual é o prazo do crédito habitação?',condition:a=>a.credit==='mortgage',opts:[
+    {v:'short',t:'Até 15 anos'},{v:'mid',t:'15 a 25 anos'},{v:'long',t:'25 a 35 anos'},{v:'vlong',t:'Mais de 35 anos'}
+  ]},
+  {id:'health',title:'Tem algum historial de saúde relevante?',sub:'Condições médicas pré-existentes podem influenciar as condições da apólice.',opts:[
+    {v:'none',t:'Não, estou saudável'},{v:'controlled',t:'Sim, condição controlada',sub:'Ex: diabetes, epilepsia controlada, hipertensão'},
+    {v:'serious',t:'Sim, doença grave ou recente',sub:'Ex: cancro, doença cardíaca, AVC'},{v:'smoker',t:'Fumador/a'}
+  ]},
+  {id:'savings',title:'Como está a sua poupança para a reforma?',opts:[
+    {v:'none',t:'Não tenho poupanças'},{v:'little',t:'Tenho alguma poupança, mas pouco'},
+    {v:'good',t:'Tenho PPR ou poupanças regulares'}
+  ]},
+  {id:'goal',title:'Qual é o seu objetivo principal?',opts:[
+    {v:'protect',t:'Proteger a família se algo acontecer'},{v:'retire',t:'Poupar para a reforma'},
+    {v:'invest',t:'Fazer o dinheiro crescer'},{v:'health',t:'Proteger rendimento por invalidez ou doença'}
+  ]},
+  {id:'income',title:'Qual é o seu rendimento mensal líquido?',opts:[
+    {v:'low',t:'Até 1.000 €/mês'},{v:'mid',t:'1.000 € a 2.000 €/mês'},
+    {v:'high',t:'2.000 € a 3.500 €/mês'},{v:'vhigh',t:'Mais de 3.500 €/mês'}
+  ]},
+  {id:'budget',title:'Qual é a sua disponibilidade mensal para seguros?',opts:[
+    {v:'min',t:'Prefiro o mínimo'},{v:'mid',t:'Aceito um valor razoável'},{v:'max',t:'Quero proteção completa'}
+  ]}
+];
+
+const incomeMap={low:750,mid:1500,high:2750,vhigh:4500};
+const mortgageMap={low:80000,mid:150000,high:270000,vhigh:400000};
+const mortgageYearsMap={short:12,mid:20,long:30,vlong:40};
+
+let answers={},step=0;
+
+function visibleQ(){return Q.filter(q=>!q.condition||q.condition(answers))}
+
+function calcPremium(base,age,health,budget){
+  const af={young:.75,mid:1,senior:1.35,old:1.75}[age]||1;
+  const hf={none:1,controlled:1.25,serious:1.6,smoker:1.3}[health]||1;
+  const bf={min:.7,mid:1,max:1.4}[budget]||1;
+  const annual=Math.round(base*af*hf*bf*12);
+  const annualFinal=Math.max(annual,300);
+  return Math.round(annualFinal/12);
+}
+function calcPayments(monthly){
+  const annual=monthly*12;
+  const annualFinal=Math.max(annual,300);
+  return{
+    annual:annualFinal,
+    trimestral:Math.round(annualFinal/4),
+    semestral:Math.round(annualFinal/2)
+  };
+}
+
+function getCapital(income,budget){
+  const base=incomeMap[income]||1500;
+  const mult={min:50,mid:80,max:120}[budget]||80;
+  return Math.round(base*mult/5000)*5000;
+}
+
+function getTotalBudget(income,budget){
+  const base=incomeMap[income]||1500;
+  const pct={min:.04,mid:.07,max:.10}[budget]||.07;
+  const amount=Math.max(Math.round(base*pct),Math.round(300/12));
+  return{amount,pct:Math.round(pct*100)};
+}
+
+function hasMedicalRisk(){return answers.health==='controlled'||answers.health==='serious'||answers.health==='smoker'}
+
+function getRecs(){
+  const a=answers;const recs=[];
+  if(a.credit==='mortgage'){
+    const cap=mortgageMap[a.mortgage_amount]||150000;
+    const yrs=mortgageYearsMap[a.mortgage_years]||25;
+    const pm=calcPremium(Math.round(cap/500),a.age,a.health,a.budget);
+    recs.push({name:'Seguro Temporário',primary:true,badge:'Produto principal',
+      desc:`Cobre o valor em dívida do crédito habitação (${cap.toLocaleString('pt-PT')} €) durante ${yrs} anos. Se algo acontecer, a família não perde a casa.`,
+      why:'Tem crédito habitação ativo — este é o seguro mais urgente e mais adequado.',
+      monthly:pm,annual:pm*12,capital:cap,note:'Prazo sugerido: '+yrs+' anos (igual ao crédito)'});
+  }
+  if(a.family==='kids'||a.goal==='protect'||(a.family==='couple'&&a.credit!=='mortgage')){
+    const cap=getCapital(a.income,a.budget);
+    const pm=calcPremium(Math.round(cap/600),a.age,a.health,a.budget);
+    recs.push({name:'Seguro de Vida Inteira',primary:recs.length===0,badge:recs.length===0?'Produto principal':'Produto complementar',
+      desc:'Capital garantido aos beneficiários em caso de falecimento, independentemente de quando ocorra. Prémio fixo para sempre.',
+      why:'Proteção permanente para a família — ideal para quem tem filhos ou dependentes.',
+      monthly:pm,annual:pm*12,capital:cap,note:'Proteção vitalícia'});
+  }
+  if(a.savings==='none'||a.savings==='little'||a.goal==='retire'||a.goal==='invest'){
+    const base=incomeMap[a.income]||1500;
+    const pm=calcPremium(Math.round(base*.04),a.age,a.health,a.budget);
+    const capFinal=Math.round(pm*12*((mortgageYearsMap[a.mortgage_years]||25))*.8/1000)*1000;
+    recs.push({name:'PPR — Plano Poupança Reforma',primary:recs.length===0,badge:recs.length===0?'Produto principal':'Produto complementar',
+      desc:'Poupança com capital garantido e vantagens fiscais no IRS. Quanto mais cedo começar, maior o capital disponível na reforma.',
+      why:'Pensão média em Portugal: ~600 €/mês. O PPR complementa a reforma e ainda deduz no IRS.',
+      monthly:pm,annual:pm*12,capital:capFinal||50000,note:'Capital estimado na reforma'});
+  }
+  if(a.goal==='health'||a.family==='business'){
+    const base=incomeMap[a.income]||1500;
+    const pm=calcPremium(Math.round(base*.025),a.age,a.health,a.budget);
+    recs.push({name:'Seguros Complementares',primary:recs.length===0,badge:recs.length===0?'Produto principal':'Produto adicional',
+      desc:'Coberturas para invalidez total ou parcial, doenças graves e acidentes. Garante um rendimento mesmo que não consiga trabalhar.',
+      why:'Essencial para trabalhadores independentes e quem quer proteger a capacidade de trabalho.',
+      monthly:pm,annual:pm*12,capital:Math.round(base*24/1000)*1000,note:'Capital de invalidez estimado'});
+  }
+  if(recs.length===0){
+    const cap=getCapital(a.income,a.budget);
+    const pm=calcPremium(Math.round(cap/600),a.age,a.health,a.budget);
+    recs.push({name:'Seguro de Vida Inteira',primary:true,badge:'Produto recomendado',
+      desc:'Proteção fundamental para qualquer pessoa. Capital garantido para quem indicar como beneficiário.',
+      why:'Proteção base essencial — e quanto mais cedo começar, menor é o prémio.',
+      monthly:pm,annual:pm*12,capital:cap,note:'Proteção vitalícia'});
+  }
+  return recs;
+}
+
+function getSummary(){
+  const m={age:{young:'18-30 anos',mid:'31-45 anos',senior:'46-55 anos',old:'56+ anos'},
+    family:{single:'Solteiro/a',couple:'Casal',kids:'Com filhos',business:'Empresário'},
+    credit:{mortgage:'Crédito habitação',loan:'Empréstimo',none:'Sem créditos'},
+    health:{none:'Saudável',controlled:'Condição controlada',serious:'Doença grave',smoker:'Fumador/a'},
+    savings:{none:'Sem poupanças',little:'Poucas poupanças',good:'Tem PPR'},
+    goal:{protect:'Proteger família',retire:'Reforma',invest:'Investir',health:'Invalidez/doença'},
+    income:{low:'até 1.000 €',mid:'1.000-2.000 €',high:'2.000-3.500 €',vhigh:'+3.500 €'}};
+  return Object.entries(answers).filter(([k])=>['age','family','credit','health','goal','income'].includes(k)).map(([k,v])=>m[k]?.[v]).filter(Boolean);
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const vq=visibleQ();
+  if(step<vq.length){
+    const q=vq[step];const sel=answers[q.id];
+    app.innerHTML=`
+      <div class="progress-wrap">
+        <div class="progress">${vq.map((_,i)=>`<div class="ps ${i<step?'done':i===step?'active':''}"></div>`).join('')}</div>
+        <div class="prog-label">${step+1} de ${vq.length}</div>
+      </div>
+      <div class="qcard">
+        <div class="qlabel">Pergunta ${step+1}</div>
+        <div class="qtitle">${q.title}</div>
+        ${q.sub?`<div class="qsub">${q.sub}</div>`:''}
+        <div class="opts">${q.opts.map(o=>`<div class="opt ${sel===o.v?'selected':''}" onclick="pick('${q.id}','${o.v}')">
+          <div class="opt-text">${o.t}${o.sub?`<div class="opt-sub">${o.sub}</div>`:''}</div>
+        </div>`).join('')}</div>
+      </div>
+      <div class="nav">
+        ${step>0?`<button class="bbk" onclick="back()">← Anterior</button>`:''}
+        <button class="bnx" onclick="next()" ${!sel?'disabled':''}>${step===vq.length-1?'Ver resultado →':'Próxima →'}</button>
+      </div>`;
+  } else {
+    const recs=getRecs();const summary=getSummary();const total=getTotalBudget(answers.income,answers.budget);
+    const hasRisk=hasMedicalRisk();
+    app.innerHTML=`
+      <div class="result-header">A sua análise personalizada</div>
+      <div class="pills">${summary.map(s=>`<span class="pill">${s}</span>`).join('')}</div>
+      ${hasRisk?`<div class="alert-box warn"><div class="alert-icon">⚠️</div><div class="alert-text"><strong>Atenção — historial de saúde:</strong> Pode existir agravamento de prémio ou análise médica adicional. A España S.A. analisa cada caso individualmente — os valores abaixo já incluem uma estimativa de agravamento.</div></div>`:''}
+      ${answers.credit==='mortgage'?`<div class="alert-box info"><div class="alert-icon">ℹ️</div><div class="alert-text">Tem crédito habitação. O banco exige um seguro de vida mas pode escolher livremente a seguradora — frequentemente com melhores condições que o seguro do banco.</div></div>`:''}
+      <div class="total-box">
+        <div><div class="total-label">Investimento mensal total estimado</div><div class="total-pct">${total.pct}% do rendimento — sustentável e eficaz</div></div>
+        <div class="total-val">~${total.amount} €/mês</div>
+      </div>
+      <div class="section-title">Soluções recomendadas para si</div>
+      ${recs.map(r=>`
+        <div class="rcard ${r.primary?'primary':''}">
+          <span class="badge ${r.primary?'bp':'bs'}">${r.badge}</span>
+          <div class="rtitle">${r.name}</div>
+          <div class="rdesc">${r.desc}</div>
+          <div class="amounts">
+            <div class="acard"><div class="alabel">Prestação trimestral</div><div class="avalue green">~${calcPayments(r.monthly).trimestral} €</div></div>
+            <div class="acard"><div class="alabel">Prestação semestral</div><div class="avalue">~${calcPayments(r.monthly).semestral} €</div></div>
+            <div class="acard"><div class="alabel">${r.note||'Capital segurado'}</div><div class="avalue">~${r.capital>=1000?Math.round(r.capital/1000)+'k':r.capital} €</div></div>
+          </div>
+          <div class="payments-note">Prémio anual estimado: <strong>~${calcPayments(r.monthly).annual} €</strong> · Pagamento mínimo trimestral</div>
+          <div class="rwhy">ℹ️ ${r.why}</div>
+        </div>`).join('')}
+      <div class="cta-box">
+        <div class="cta-title">Quer uma proposta exata e gratuita?</div>
+        <div class="cta-text">Em 30 minutos analiso a sua situação em detalhe e apresento valores reais — sem qualquer compromisso.</div>
+        <button class="cta-btn" onclick="openLink('https://docs.google.com/forms/d/e/1FAIpQLScvWztaEzf56MHzqk2LbygUZ9LHe9Om1HCX_RR0wRmqiu1qXw/viewform')">Solicitar análise gratuita</button>
+      </div>
+      <div class="disclaimer">Os montantes são estimativas orientadoras. Os valores exatos dependem da análise detalhada, da aceitação médica e das condições de cada apólice. Para uma proposta personalizada contacte Daniel Quintas — +351 915 834 255</div>
+      <button class="reset-btn" onclick="reset()">← Recomeçar análise</button>`;
+  }
+}
+
+function pick(id,v){answers[id]=v;render()}
+function next(){const vq=visibleQ();if(answers[vq[step].id]){step++;render()}}
+function back(){if(step>0){step--;render()}}
+function reset(){answers={};step=0;render()}
+function openLink(url){window.open(url,'_blank')}
+render();
+</script>
+</body>
+</html>
