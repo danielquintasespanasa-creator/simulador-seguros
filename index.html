@@ -21,11 +21,9 @@ body{background:#f5f5f3;min-height:100vh;padding:2rem 1rem}
 .qtitle{font-size:16px;font-weight:600;color:#0A1628;margin-bottom:4px}
 .qsub{font-size:13px;color:#888;margin-bottom:1.25rem;line-height:1.5}
 .opts{display:flex;flex-direction:column;gap:7px}
-.opt{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border:1px solid #e8e8e8;border-radius:8px;cursor:pointer;background:#fff;transition:all .15s;font-size:14px;color:#333;text-align:left}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border:1px solid #e8e8e8;border-radius:8px;cursor:pointer;background:#fff;transition:all .15s;font-size:14px;color:#333;text-align:left;width:100%}
 .opt:hover{border-color:#378ADD;background:#f0f7ff}
 .opt.selected{border-color:#378ADD;background:#E6F1FB;color:#185FA5;font-weight:500}
-.opt-icon{font-size:16px;margin-top:1px;flex-shrink:0}
-.opt-text{flex:1}
 .opt-sub{font-size:12px;color:#999;margin-top:2px;font-weight:400}
 .opt.selected .opt-sub{color:#378ADD}
 .nav{display:flex;gap:8px;margin-top:1rem}
@@ -50,7 +48,7 @@ body{background:#f5f5f3;min-height:100vh;padding:2rem 1rem}
 .rcard{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:1.25rem;margin-bottom:10px}
 .rcard.primary{border:2px solid #378ADD}
 .badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:6px;margin-bottom:10px;font-weight:500}
-.bp{background:#E6F1FB;color:#185FA5}.bs{background:#f5f5f3;color:#888}.bw{background:#FAEEDA;color:#633806}
+.bp{background:#E6F1FB;color:#185FA5}.bs{background:#f5f5f3;color:#888}
 .rtitle{font-size:15px;font-weight:600;color:#0A1628;margin-bottom:5px}
 .rdesc{font-size:13px;color:#666;line-height:1.6;margin-bottom:10px}
 .amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
@@ -64,7 +62,7 @@ body{background:#f5f5f3;min-height:100vh;padding:2rem 1rem}
 .cta-title{font-size:15px;font-weight:600;color:#085041;margin-bottom:5px}
 .cta-text{font-size:13px;color:#0F6E56;margin-bottom:12px;line-height:1.5}
 .cta-btn{display:inline-block;background:#1D9E75;color:white;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;border:none}
-.disclaimer{font-size:12px;color:#999;margin-top:10px;padding:10px;background:#f5f5f3;border-radius:8px;line-height:1.5}
+.disclaimer{font-size:12px;color:#633806;margin-top:10px;padding:12px 14px;background:#FAEEDA;border:1px solid #FAC775;border-radius:8px;line-height:1.6}
 .reset-btn{padding:10px 20px;font-size:13px;cursor:pointer;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0;background:#fff;color:#777;width:100%}
 </style>
 </head>
@@ -111,7 +109,7 @@ const Q=[
     {v:'low',t:'Até 1.000 €/mês'},{v:'mid',t:'1.000 € a 2.000 €/mês'},
     {v:'high',t:'2.000 € a 3.500 €/mês'},{v:'vhigh',t:'Mais de 3.500 €/mês'}
   ]},
-  {id:'budget',title:'Qual é a sua disponibilidade mensal para seguros?',opts:[
+  {id:'budget',title:'Qual é a sua disponibilidade para seguros?',opts:[
     {v:'min',t:'Prefiro o mínimo'},{v:'mid',t:'Aceito um valor razoável'},{v:'max',t:'Quero proteção completa'}
   ]}
 ];
@@ -119,7 +117,6 @@ const Q=[
 const incomeMap={low:750,mid:1500,high:2750,vhigh:4500};
 const mortgageMap={low:80000,mid:150000,high:270000,vhigh:400000};
 const mortgageYearsMap={short:12,mid:20,long:30,vlong:40};
-
 let answers={},step=0;
 
 function visibleQ(){return Q.filter(q=>!q.condition||q.condition(answers))}
@@ -129,17 +126,11 @@ function calcPremium(base,age,health,budget){
   const hf={none:1,controlled:1.25,serious:1.6,smoker:1.3}[health]||1;
   const bf={min:.7,mid:1,max:1.4}[budget]||1;
   const annual=Math.round(base*af*hf*bf*12);
-  const annualFinal=Math.max(annual,300);
-  return Math.round(annualFinal/12);
+  return Math.max(annual,300);
 }
-function calcPayments(monthly){
-  const annual=monthly*12;
-  const annualFinal=Math.max(annual,300);
-  return{
-    annual:annualFinal,
-    trimestral:Math.round(annualFinal/4),
-    semestral:Math.round(annualFinal/2)
-  };
+
+function calcPayments(annual){
+  return{annual:annual,trimestral:Math.round(annual/4),semestral:Math.round(annual/2)};
 }
 
 function getCapital(income,budget){
@@ -151,8 +142,7 @@ function getCapital(income,budget){
 function getTotalBudget(income,budget){
   const base=incomeMap[income]||1500;
   const pct={min:.04,mid:.07,max:.10}[budget]||.07;
-  const amount=Math.max(Math.round(base*pct),Math.round(300/12));
-  return{amount,pct:Math.round(pct*100)};
+  return{amount:Math.max(Math.round(base*pct),25),pct:Math.round(pct*100)};
 }
 
 function hasMedicalRisk(){return answers.health==='controlled'||answers.health==='serious'||answers.health==='smoker'}
@@ -162,44 +152,43 @@ function getRecs(){
   if(a.credit==='mortgage'){
     const cap=mortgageMap[a.mortgage_amount]||150000;
     const yrs=mortgageYearsMap[a.mortgage_years]||25;
-    const pm=calcPremium(Math.round(cap/500),a.age,a.health,a.budget);
+    const ann=calcPremium(Math.round(cap/500),a.age,a.health,a.budget);
     recs.push({name:'Seguro Temporário',primary:true,badge:'Produto principal',
-      desc:`Cobre o valor em dívida do crédito habitação (${cap.toLocaleString('pt-PT')} €) durante ${yrs} anos. Se algo acontecer, a família não perde a casa.`,
-      why:'Tem crédito habitação ativo — este é o seguro mais urgente e mais adequado.',
-      monthly:pm,annual:pm*12,capital:cap,note:'Prazo sugerido: '+yrs+' anos (igual ao crédito)'});
+      desc:'Cobre o valor em dívida do crédito habitação ('+cap.toLocaleString('pt-PT')+' €) durante '+yrs+' anos. Se algo acontecer, a família não perde a casa.',
+      why:'Tem crédito habitação ativo — este é o seguro mais urgente e adequado.',
+      annual:ann,capital:cap,note:'Prazo: '+yrs+' anos'});
   }
   if(a.family==='kids'||a.goal==='protect'||(a.family==='couple'&&a.credit!=='mortgage')){
     const cap=getCapital(a.income,a.budget);
-    const pm=calcPremium(Math.round(cap/600),a.age,a.health,a.budget);
+    const ann=calcPremium(Math.round(cap/600),a.age,a.health,a.budget);
     recs.push({name:'Seguro de Vida Inteira',primary:recs.length===0,badge:recs.length===0?'Produto principal':'Produto complementar',
-      desc:'Capital garantido aos beneficiários em caso de falecimento, independentemente de quando ocorra. Prémio fixo para sempre.',
-      why:'Proteção permanente para a família — ideal para quem tem filhos ou dependentes.',
-      monthly:pm,annual:pm*12,capital:cap,note:'Proteção vitalícia'});
+      desc:'Capital garantido aos beneficiários em caso de falecimento. Prémio fixo para sempre, independentemente da idade.',
+      why:'Proteção permanente para a família — ideal para quem tem dependentes.',
+      annual:ann,capital:cap,note:'Proteção vitalícia'});
   }
   if(a.savings==='none'||a.savings==='little'||a.goal==='retire'||a.goal==='invest'){
     const base=incomeMap[a.income]||1500;
-    const pm=calcPremium(Math.round(base*.04),a.age,a.health,a.budget);
-    const capFinal=Math.round(pm*12*((mortgageYearsMap[a.mortgage_years]||25))*.8/1000)*1000;
+    const ann=calcPremium(Math.round(base*.04),a.age,a.health,a.budget);
     recs.push({name:'PPR — Plano Poupança Reforma',primary:recs.length===0,badge:recs.length===0?'Produto principal':'Produto complementar',
-      desc:'Poupança com capital garantido e vantagens fiscais no IRS. Quanto mais cedo começar, maior o capital disponível na reforma.',
+      desc:'Poupança com capital garantido e vantagens fiscais no IRS. Quanto mais cedo começar, maior o capital na reforma.',
       why:'Pensão média em Portugal: ~600 €/mês. O PPR complementa a reforma e ainda deduz no IRS.',
-      monthly:pm,annual:pm*12,capital:capFinal||50000,note:'Capital estimado na reforma'});
+      annual:ann,capital:Math.max(ann*20,30000),note:'Capital estimado na reforma'});
   }
   if(a.goal==='health'||a.family==='business'){
     const base=incomeMap[a.income]||1500;
-    const pm=calcPremium(Math.round(base*.025),a.age,a.health,a.budget);
+    const ann=calcPremium(Math.round(base*.025),a.age,a.health,a.budget);
     recs.push({name:'Seguros Complementares',primary:recs.length===0,badge:recs.length===0?'Produto principal':'Produto adicional',
-      desc:'Coberturas para invalidez total ou parcial, doenças graves e acidentes. Garante um rendimento mesmo que não consiga trabalhar.',
+      desc:'Coberturas para invalidez, doenças graves e acidentes. Garante rendimento mesmo que não consiga trabalhar.',
       why:'Essencial para trabalhadores independentes e quem quer proteger a capacidade de trabalho.',
-      monthly:pm,annual:pm*12,capital:Math.round(base*24/1000)*1000,note:'Capital de invalidez estimado'});
+      annual:ann,capital:Math.round(base*24/1000)*1000,note:'Capital de invalidez'});
   }
   if(recs.length===0){
     const cap=getCapital(a.income,a.budget);
-    const pm=calcPremium(Math.round(cap/600),a.age,a.health,a.budget);
+    const ann=calcPremium(Math.round(cap/600),a.age,a.health,a.budget);
     recs.push({name:'Seguro de Vida Inteira',primary:true,badge:'Produto recomendado',
       desc:'Proteção fundamental para qualquer pessoa. Capital garantido para quem indicar como beneficiário.',
-      why:'Proteção base essencial — e quanto mais cedo começar, menor é o prémio.',
-      monthly:pm,annual:pm*12,capital:cap,note:'Proteção vitalícia'});
+      why:'Quanto mais cedo começar, menor é o prémio.',
+      annual:ann,capital:cap,note:'Proteção vitalícia'});
   }
   return recs;
 }
@@ -209,7 +198,6 @@ function getSummary(){
     family:{single:'Solteiro/a',couple:'Casal',kids:'Com filhos',business:'Empresário'},
     credit:{mortgage:'Crédito habitação',loan:'Empréstimo',none:'Sem créditos'},
     health:{none:'Saudável',controlled:'Condição controlada',serious:'Doença grave',smoker:'Fumador/a'},
-    savings:{none:'Sem poupanças',little:'Poucas poupanças',good:'Tem PPR'},
     goal:{protect:'Proteger família',retire:'Reforma',invest:'Investir',health:'Invalidez/doença'},
     income:{low:'até 1.000 €',mid:'1.000-2.000 €',high:'2.000-3.500 €',vhigh:'+3.500 €'}};
   return Object.entries(answers).filter(([k])=>['age','family','credit','health','goal','income'].includes(k)).map(([k,v])=>m[k]?.[v]).filter(Boolean);
@@ -220,56 +208,40 @@ function render(){
   const vq=visibleQ();
   if(step<vq.length){
     const q=vq[step];const sel=answers[q.id];
-    app.innerHTML=`
-      <div class="progress-wrap">
-        <div class="progress">${vq.map((_,i)=>`<div class="ps ${i<step?'done':i===step?'active':''}"></div>`).join('')}</div>
-        <div class="prog-label">${step+1} de ${vq.length}</div>
-      </div>
-      <div class="qcard">
-        <div class="qlabel">Pergunta ${step+1}</div>
-        <div class="qtitle">${q.title}</div>
-        ${q.sub?`<div class="qsub">${q.sub}</div>`:''}
-        <div class="opts">${q.opts.map(o=>`<div class="opt ${sel===o.v?'selected':''}" onclick="pick('${q.id}','${o.v}')">
-          <div class="opt-text">${o.t}${o.sub?`<div class="opt-sub">${o.sub}</div>`:''}</div>
-        </div>`).join('')}</div>
-      </div>
-      <div class="nav">
-        ${step>0?`<button class="bbk" onclick="back()">← Anterior</button>`:''}
-        <button class="bnx" onclick="next()" ${!sel?'disabled':''}>${step===vq.length-1?'Ver resultado →':'Próxima →'}</button>
-      </div>`;
+    app.innerHTML='<div class="progress-wrap"><div class="progress">'+vq.map((_,i)=>'<div class="ps '+(i<step?'done':i===step?'active':'')+'"></div>').join('')+'</div><div class="prog-label">'+(step+1)+' de '+vq.length+'</div></div>'
+    +'<div class="qcard"><div class="qlabel">Pergunta '+(step+1)+'</div><div class="qtitle">'+q.title+'</div>'
+    +(q.sub?'<div class="qsub">'+q.sub+'</div>':'')
+    +'<div class="opts">'+q.opts.map(o=>'<div class="opt'+(sel===o.v?' selected':'')+'" onclick="pick(\''+q.id+'\',\''+o.v+'\')">'
+    +o.t+(o.sub?'<div class="opt-sub">'+o.sub+'</div>':'')+'</div>').join('')+'</div></div>'
+    +'<div class="nav">'+(step>0?'<button class="bbk" onclick="back()">← Anterior</button>':'')
+    +'<button class="bnx" onclick="next()"'+(sel?'':' disabled')+'>'+(step===vq.length-1?'Ver resultado →':'Próxima →')+'</button></div>';
   } else {
     const recs=getRecs();const summary=getSummary();const total=getTotalBudget(answers.income,answers.budget);
     const hasRisk=hasMedicalRisk();
-    app.innerHTML=`
-      <div class="result-header">A sua análise personalizada</div>
-      <div class="pills">${summary.map(s=>`<span class="pill">${s}</span>`).join('')}</div>
-      ${hasRisk?`<div class="alert-box warn"><div class="alert-icon">⚠️</div><div class="alert-text"><strong>Atenção — historial de saúde:</strong> Pode existir agravamento de prémio ou análise médica adicional. A España S.A. analisa cada caso individualmente — os valores abaixo já incluem uma estimativa de agravamento.</div></div>`:''}
-      ${answers.credit==='mortgage'?`<div class="alert-box info"><div class="alert-icon">ℹ️</div><div class="alert-text">Tem crédito habitação. O banco exige um seguro de vida mas pode escolher livremente a seguradora — frequentemente com melhores condições que o seguro do banco.</div></div>`:''}
-      <div class="total-box">
-        <div><div class="total-label">Investimento mensal total estimado</div><div class="total-pct">${total.pct}% do rendimento — sustentável e eficaz</div></div>
-        <div class="total-val">~${total.amount} €/mês</div>
-      </div>
-      <div class="section-title">Soluções recomendadas para si</div>
-      ${recs.map(r=>`
-        <div class="rcard ${r.primary?'primary':''}">
-          <span class="badge ${r.primary?'bp':'bs'}">${r.badge}</span>
-          <div class="rtitle">${r.name}</div>
-          <div class="rdesc">${r.desc}</div>
-          <div class="amounts">
-            <div class="acard"><div class="alabel">Prestação trimestral</div><div class="avalue green">~${calcPayments(r.monthly).trimestral} €</div></div>
-            <div class="acard"><div class="alabel">Prestação semestral</div><div class="avalue">~${calcPayments(r.monthly).semestral} €</div></div>
-            <div class="acard"><div class="alabel">${r.note||'Capital segurado'}</div><div class="avalue">~${r.capital>=1000?Math.round(r.capital/1000)+'k':r.capital} €</div></div>
-          </div>
-          <div class="payments-note">Prémio anual estimado: <strong>~${calcPayments(r.monthly).annual} €</strong> · Pagamento mínimo trimestral</div>
-          <div class="rwhy">ℹ️ ${r.why}</div>
-        </div>`).join('')}
-      <div class="cta-box">
-        <div class="cta-title">Quer uma proposta exata e gratuita?</div>
-        <div class="cta-text">Em 30 minutos analiso a sua situação em detalhe e apresento valores reais — sem qualquer compromisso.</div>
-        <button class="cta-btn" onclick="openLink('https://docs.google.com/forms/d/e/1FAIpQLScvWztaEzf56MHzqk2LbygUZ9LHe9Om1HCX_RR0wRmqiu1qXw/viewform')">Solicitar análise gratuita</button>
-      </div>
-      <div class="disclaimer">Os montantes são estimativas orientadoras. Os valores exatos dependem da análise detalhada, da aceitação médica e das condições de cada apólice. Para uma proposta personalizada contacte Daniel Quintas — +351 915 834 255</div>
-      <button class="reset-btn" onclick="reset()">← Recomeçar análise</button>`;
+    let html='<div class="result-header">A sua análise personalizada</div>';
+    html+='<div class="pills">'+summary.map(s=>'<span class="pill">'+s+'</span>').join('')+'</div>';
+    if(hasRisk) html+='<div class="alert-box warn"><div class="alert-icon">⚠️</div><div class="alert-text"><strong>Historial de saúde:</strong> Pode existir agravamento de prémio. A España S.A. analisa cada caso individualmente — os valores já incluem uma estimativa.</div></div>';
+    if(answers.credit==='mortgage') html+='<div class="alert-box info"><div class="alert-icon">ℹ️</div><div class="alert-text">Tem crédito habitação. Pode escolher livremente a seguradora — frequentemente com melhores condições que o seguro do banco.</div></div>';
+    html+='<div class="total-box"><div><div class="total-label">Investimento anual estimado</div><div class="total-pct">~'+total.pct+'% do rendimento</div></div><div class="total-val">~'+total.amount*12+' €/ano</div></div>';
+    html+='<div class="section-title">Soluções recomendadas para si</div>';
+    recs.forEach(r=>{
+      const p=calcPayments(r.annual);
+      html+='<div class="rcard'+(r.primary?' primary':'')+'"><span class="badge '+(r.primary?'bp':'bs')+'">'+r.badge+'</span>'
+      +'<div class="rtitle">'+r.name+'</div><div class="rdesc">'+r.desc+'</div>'
+      +'<div class="amounts">'
+      +'<div class="acard"><div class="alabel">Prestação trimestral</div><div class="avalue green">~'+p.trimestral+' €</div></div>'
+      +'<div class="acard"><div class="alabel">Prestação semestral</div><div class="avalue">~'+p.semestral+' €</div></div>'
+      +'<div class="acard"><div class="alabel">'+r.note+'</div><div class="avalue">~'+(r.capital>=1000?Math.round(r.capital/1000)+'k':r.capital)+' €</div></div>'
+      +'</div>'
+      +'<div class="payments-note">Prémio anual estimado: <strong>~'+p.annual+' €</strong> · Pagamento mínimo trimestral</div>'
+      +'<div class="rwhy">ℹ️ '+r.why+'</div></div>';
+    });
+    html+='<div class="cta-box"><div class="cta-title">Quer uma proposta exata e gratuita?</div>'
+    +'<div class="cta-text">Em 30 minutos analiso a sua situação em detalhe e apresento valores reais — sem qualquer compromisso.</div>'
+    +'<button class="cta-btn" onclick="window.open(\'https://docs.google.com/forms/d/e/1FAIpQLScvWztaEzf56MHzqk2LbygUZ9LHe9Om1HCX_RR0wRmqiu1qXw/viewform\',\'_blank\')">Solicitar análise gratuita</button></div>'
+    +'<div class="disclaimer"><strong>⚠️ Atenção:</strong> Os valores apresentados são uma estimativa indicativa baseada nas suas respostas. Os prémios e capitais reais podem variar consoante a análise médica, as condições da apólice e o perfil detalhado de cada cliente. Para obter valores exatos e uma proposta 100% personalizada, realize uma simulação detalhada com o Daniel Quintas — <strong>+351 915 834 255</strong>.</div>'
+    +'<button class="reset-btn" onclick="reset()">← Recomeçar análise</button>';
+    app.innerHTML=html;
   }
 }
 
@@ -277,7 +249,6 @@ function pick(id,v){answers[id]=v;render()}
 function next(){const vq=visibleQ();if(answers[vq[step].id]){step++;render()}}
 function back(){if(step>0){step--;render()}}
 function reset(){answers={};step=0;render()}
-function openLink(url){window.open(url,'_blank')}
 render();
 </script>
 </body>
